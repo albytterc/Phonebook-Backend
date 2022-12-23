@@ -3,7 +3,6 @@ const morgan = require('morgan');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3001;
 
 const unknownEndpoint = (req, res) => {
   res.status(404).json({error: 'Unknown endpoint'});
@@ -113,6 +112,6 @@ app.get('/api/info', (req, res) => {
 
 app.use(unknownEndpoint);
 
-app.listen(PORT, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log(`App is listening on port ${PORT}...`);
 });
