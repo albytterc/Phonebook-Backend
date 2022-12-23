@@ -1,5 +1,6 @@
 const express = require('express');
 const morgan = require('morgan');
+const cors = require('cors');
 
 const app = express();
 const PORT = 3001;
@@ -8,6 +9,7 @@ const unknownEndpoint = (req, res) => {
   res.status(404).json({error: 'Unknown endpoint'});
 };
 
+app.use(cors());
 app.use(express.json());
 app.use(morgan((tokens, req, res) => {
   let log = [
@@ -29,22 +31,22 @@ let data = [
   {
     "id": 1,
     "name": "Arto Hellas",
-    "number": "040-123456"
+    "number": "040123456"
   },
   {
     "id": 2,
     "name": "Ada Lovelace",
-    "number": "39-44-5323523"
+    "number": "39445323523"
   },
   {
     "id": 3,
     "name": "Dan Abramov",
-    "number": "12-43-234345"
+    "number": "1243234345"
   },
   {
     "id": 4,
     "name": "Mary Poppendieck",
-    "number": "39-23-6423122"
+    "number": "39236423122"
   }
 ];
 
