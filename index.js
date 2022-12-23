@@ -9,6 +9,7 @@ const unknownEndpoint = (req, res) => {
   res.status(404).json({error: 'Unknown endpoint'});
 };
 
+app.use(express.static('build'))
 app.use(cors());
 app.use(express.json());
 app.use(morgan((tokens, req, res) => {
