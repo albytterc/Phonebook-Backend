@@ -37,7 +37,6 @@ const options = {
 }
 
 
-app.use(express.json());
 // app.use(morgan((tokens, req, res) => {
 //   let log = [
 //     tokens.method(req, res),
@@ -55,6 +54,7 @@ app.use(express.json());
 // }));
 app.use(cors());
 app.use(express.static('build', options));
+app.use(express.json());
 
 
 app.route('/api/persons')
