@@ -2,6 +2,11 @@ const express = require('express');
 // const morgan = require('morgan');
 const cors = require('cors');
 
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
+
 const app = express();
 
 let data = [
@@ -123,6 +128,7 @@ const unknownEndpoint = (req, res) => {
 
 app.use(unknownEndpoint);
 
+console.log('port=', process.env.PORT);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`App is listening on port ${PORT}...`);
