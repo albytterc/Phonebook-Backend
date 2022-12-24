@@ -1,31 +1,40 @@
 const express = require('express');
-const morgan = require('morgan');
+// const morgan = require('morgan');
 const cors = require('cors');
 
 const app = express();
+
+const options = {
+  dotfiles: 'ignore',
+  etag: false,
+  extensions: ['htm', 'html','css','js','ico','jpg','jpeg','png','svg'],
+  index: ['index.html'],
+  maxAge: '1m',
+  redirect: false
+}
 
 const unknownEndpoint = (req, res) => {
   res.status(404).json({error: 'Unknown endpoint'});
 };
 
 app.use(express.json());
-app.use(morgan((tokens, req, res) => {
-  let log = [
-    tokens.method(req, res),
-    tokens.url(req, res),
-    tokens.status(req, res),
-    tokens.res(req, res, 'content-length'), '-',
-    tokens['response-time'](req, res), 'ms'
-  ].join(' ');
-
-  if (req.method === 'POST') {
-    return `${log} ${JSON.stringify(req.body)}`;
-  }
-
-  return log;
-}));
+// app.use(morgan((tokens, req, res) => {
+//   let log = [
+//     tokens.method(req, res),
+//     tokens.url(req, res),
+//     tokens.status(req, res),
+//     tokens.res(req, res, 'content-length'), '-',
+//     tokens['response-time'](req, res), 'ms'
+//   ].join(' ');
+//
+//   if (req.method === 'POST') {
+//     return `${log} ${JSON.stringify(req.body)}`;
+//   }
+//
+//   return log;
+// }));
 app.use(cors());
-app.use(express.static('build'));
+app.use(express.static('build', options));
 
 let data = [
   {
