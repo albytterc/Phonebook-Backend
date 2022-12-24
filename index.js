@@ -8,8 +8,6 @@ const unknownEndpoint = (req, res) => {
   res.status(404).json({error: 'Unknown endpoint'});
 };
 
-app.use(express.static('build'));
-app.use(cors());
 app.use(express.json());
 app.use(morgan((tokens, req, res) => {
   let log = [
@@ -26,6 +24,8 @@ app.use(morgan((tokens, req, res) => {
 
   return log;
 }));
+app.use(cors());
+app.use(express.static('build'));
 
 let data = [
   {
