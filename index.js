@@ -1,45 +1,20 @@
+if (process.env.NODE_ENV !== 'production') {
+	require('dotenv').config();
+}
 const express = require('express');
 // const morgan = require('morgan');
 const cors = require('cors');
-
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
-}
-
-
+const Person = require('./models/person');
 const app = express();
 
-let data = [
-  {
-    "id": 1,
-    "name": "Arto Hellas",
-    "number": "040123456"
-  },
-  {
-    "id": 2,
-    "name": "Ada Lovelace",
-    "number": "39445323523"
-  },
-  {
-    "id": 3,
-    "name": "Dan Abramov",
-    "number": "1243234345"
-  },
-  {
-    "id": 4,
-    "name": "Mary Poppendieck",
-    "number": "39236423122"
-  }
-];
-
 const options = {
-  dotfiles: 'ignore',
-  etag: false,
-  extensions: ['htm', 'html','css','js','ico','jpg','jpeg','png','svg'],
-  index: ['index.html'],
-  maxAge: '1m',
-  redirect: false
-}
+	dotfiles: 'ignore',
+	etag: false,
+	extensions: ['htm', 'html', 'css', 'js', 'ico', 'jpg', 'jpeg', 'png', 'svg'],
+	index: ['index.html'],
+	maxAge: '1m',
+	redirect: false
+};
 
 
 // app.use(morgan((tokens, req, res) => {
@@ -63,73 +38,101 @@ app.use(express.json());
 
 
 app.route('/api/persons')
-  .get((req, res) => {
-    console.log("GET /api/persons -- 200 OK");
-    res.json(data);
-  })
-  .post((req, res) => {
-    const body = req.body;
-    const hasDuplicate = data.find((entry) => entry.name === body.name);
+	.get((req, res) => {
+		console.log('GET /api/persons -- 200 OK');
+		Person.find({}).then((result) => {
+			res.json(result);
+			// mongoose.connection.close();
+		});
+	})
+	.post(async (req, res, next) => {
+		const body = req.body;
+		if (!body.name || !body.number) {
+			console.log('POST /api/persons -- 400 name or number missing');
+			return res.status(400).json({ error: 'Name or number missing' });
+		}
 
-    if (!body.name || !body.number) {
-      console.log("POST /api/persons -- 400 name or number missing");
-      return res.status(400).json({error: 'Name or number missing'});
-    }
+		const hasDuplicate = await Person.exists({ name: body.name });
+		if (hasDuplicate) {
+			console.log('POST /api/persons -- 400 duplicate name');
+			return res.status(400).json({ error: `Name ${body.name} already exists in phonebook` });
+		}
 
-
-    if (hasDuplicate) {
-      console.log("POST /api/persons -- 400 duplicate name");
-      return res.status(400).json({error: `Name ${body.name} already exists in phonebook`});
-    }
-
-
-    const person = {
-      id: Math.floor((Math.random() * 100) + 1),
-      ...body
-    };
-
-    data = data.concat(person);
-
-    console.log("POST /api/persons -- 200 OK");
-    res.json(person);
-  });
+		const person = new Person(body);
+		person.save()
+			.then((savedPerson) => {
+				console.log('POST /api/persons -- 200 OK');
+				res.json(savedPerson);
+			})
+			.catch((err => next(err)));
+	});
 
 app.route('/api/persons/:id')
-  .get((req, res) => {
-    const id = Number(req.params.id);
-    const resource = data.find((entry) => entry.id === id);
+	.get(async (req, res) => {
+		const id = req.params.id;
+		const resource = await Person.findById(id).exec();
 
-    if (resource) {
-      res.json(resource);
-    } else {
-      res.sendStatus(404);
-    }
-  })
-  .delete((req, res) => {
-    const id = Number(req.params.id);
-    const newList = data.filter((entry) => entry.id !== id);
+		if (resource) {
+			res.json(resource);
+		} else {
+			res.sendStatus(404);
+		}
+	})
+	.delete((req, res, next) => {
+		const id = req.params.id;
+		Person.findByIdAndRemove(id)
+			.then((resp) => {
+				if (resp) {
+					res.sendStatus(204);
+				} else {
+					res.sendStatus(404);
+				}
+			})
+			.catch(err => next(err));
+	})
+	.put((req, res, next) => {
+		const id = req.params.id;
+		const body = req.body;
+		const options = {
+			new: true,
+			runValidators: true,
+			context: 'query'
+		};
+		Person.findByIdAndUpdate(id, body, options)
+			.then((result) => {
+				res.json(result);
+			})
+			.catch(error => next(error));
+	});
 
-    if (data.length === newList.length) {
-      res.sendStatus(404);
-    } else {
-      data = newList;
-      res.sendStatus(204);
-    }
-  });
 
-
-app.get('/api/info', (req, res) => {
-  res.send(new Date().toString() + `<p>Phonebook has ${data.length} person(s) in it</p>`);
+app.get('/api/info', async (req, res) => {
+	const numPeople = await Person.countDocuments({});
+	res.send(new Date().toString() + `<p>Phonebook has ${numPeople} person(s) in it</p>`);
 });
 
 const unknownEndpoint = (req, res) => {
-  res.status(404).json({error: 'Unknown endpoint'});
+	res.status(404).json({ error: 'Unknown endpoint' });
 };
 
 app.use(unknownEndpoint);
 
-console.log('port=', process.env.PORT);
+const errorHandler = (error, req, res, next) => {
+	console.log(error.message);
+
+	switch (error.name) {
+	case 'CastError':
+		return res.status(400).send({ error: 'Incorrectly formatted id' });
+	case 'ValidationError':
+		return res.status(400).json({ error: error.message });
+	default:
+		next(error);
+	}
+};
+
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`App is listening on port ${PORT}...`);
+	console.log(`App is listening on port ${PORT}...`);
 });
